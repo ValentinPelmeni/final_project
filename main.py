@@ -3,7 +3,7 @@ from pygame.draw import *
 
 pygame.init()
 
-g = 0
+g = 1
 
 
 class Hero(pygame.sprite.Sprite):
@@ -13,10 +13,10 @@ class Hero(pygame.sprite.Sprite):
         self.x = x
         self.dx = dx
         self.y = y
-        self.dy = dy + g
+        self.dy = dy
         self.screen = screen
         self.m = 1
-        self.rect = pygame.Rect(self.x + self.dx, self.y + self.dy, 79, 100)
+        self.rect = pygame.Rect(self.x, self.y, 79, 100)
 
     def draw(self):
         image1 = pygame.image.load('hero1.png')
@@ -25,17 +25,26 @@ class Hero(pygame.sprite.Sprite):
             image1 = pygame.transform.flip(image1, True, False)
         image1.set_colorkey((255, 255, 255))
         screen.blit(image1, (self.x, self.y))
-        self.rect = pygame.Rect(self.x + self.dx, self.y + self.dy, 79, 100)
+        self.rect = pygame.Rect(self.x, self.y, 79, 100)
 
 
 def move(hero, platforms):
+    k = False
     if hero.x < 0 or hero.x + 79 > 1000:
         hero.dx *= (-1)
         hero.m *= (-1)
     for platform in platforms:
-        if not pygame.sprite.collide_rect(hero, platform):
-            hero.y = hero.y + hero.dy
-    hero.x = hero.x + hero.dx
+        if pygame.sprite.collide_rect(hero, platform):
+            k = True
+            hero.dy = 0
+            hero.y = platform.y - 115
+    if hero.y + 100 > 700:
+        hero.y = 600
+        k = True
+    if not k and hero.y < 600:
+        hero.y += hero.dy
+        hero.dy += g
+    hero.x += hero.dx
 
 
 class Platform(pygame.sprite.Sprite):
@@ -46,7 +55,7 @@ class Platform(pygame.sprite.Sprite):
         self.y = y
         self.l = l
         self.screen = screen
-        self.rect = pygame.Rect(self.x, self.y, self.l, 15)
+        self.rect = pygame.Rect(self.x, self.y - 15, self.l, 30)
 
     def draw(self):
         rect(self.screen, (194, 120, 16), (self.x, self.y - 15, self.l, 30), border_bottom_left_radius=14,
@@ -68,7 +77,7 @@ pygame.display.update()
 clock = pygame.time.Clock()
 finished = False
 platforms = []
-hero = Hero(screen, 10, 10, 4, 1)
+hero = Hero(screen, 10, 10, 4, 4)
 
 while not finished:
     clock.tick(FPS)
