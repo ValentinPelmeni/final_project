@@ -52,9 +52,6 @@ class Platform(pygame.sprite.Sprite):
 
 def move(hero, platforms):
     k = False
-    if hero.x < 0 or hero.x + 79 > 1000:
-        hero.dx *= (-1)
-        hero.m *= (-1)
     for platform in platforms:
         if pygame.sprite.collide_rect(hero, platform):
             k = True
@@ -66,7 +63,13 @@ def move(hero, platforms):
     if not k and hero.y < 600:
         hero.y += hero.dy
         hero.dy += g
-    hero.x += hero.dx
+    if hero.x < 0 or hero.x + 79 > 1000:
+        if hero.x < 0:
+            hero.x = 0
+        if hero.x + 79 > 1000:
+            hero.x = 1000 - 79
+    else:
+        hero.x += hero.dx
 
 FPS = 20
 screen = pygame.display.set_mode((1000, 700))
