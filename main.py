@@ -16,16 +16,24 @@ class Hero(pygame.sprite.Sprite):
         self.dy = dy
         self.screen = screen
         self.m = 1
+        self.n = 0
         self.rect = pygame.Rect(self.x, self.y, 79, 100)
+        self.time = 0
+        self.images = []
 
     def draw(self):
-        image1 = pygame.image.load('hero1.png')
-        image1 = pygame.transform.scale(image1, (79, 100))
+        if hero.dx != 0 and timer % 5 == 0:
+            self.n = timer % len(self.images)
         if self.m == -1:
-            image1 = pygame.transform.flip(image1, True, False)
-        image1.set_colorkey((255, 255, 255))
-        screen.blit(image1, (self.x, self.y))
+            image = pygame.transform.flip(self.images[self.n], True, False)
+            image.set_colorkey((255, 255, 255))
+            screen.blit(image, (self.x, self.y))
+        else:
+            self.images[self.n].set_colorkey((255, 255, 255))
+            screen.blit(self.images[self.n], (self.x, self.y))
         self.rect = pygame.Rect(self.x, self.y, 79, 100)
+        self.time += 1
+
 
 class Platform(pygame.sprite.Sprite):
 
@@ -71,6 +79,7 @@ def move(hero, platforms):
     else:
         hero.x += hero.dx
 
+
 FPS = 20
 screen = pygame.display.set_mode((1000, 700))
 
@@ -81,6 +90,8 @@ platforms = []
 timer = 0
 
 hero = Hero(screen, 0, 35)
+hero.images.append(pygame.transform.scale(pygame.image.load('hero1.png'), (79, 100)))
+hero.images.append(pygame.transform.scale(pygame.image.load('hero2.png'), (79, 100)))
 
 while not finished:
     clock.tick(FPS)
@@ -96,17 +107,16 @@ while not finished:
             finished = True
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_LEFT:
-                hero.dx = -1
+                hero.dx = -4
                 hero.m = (-1)
             if event.key == pygame.K_RIGHT:
-                hero.dx = 1
+                hero.dx = 4
                 hero.m = 1
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_LEFT:
                 hero.dx = 0
             if event.key == pygame.K_RIGHT:
                 hero.dx = 0
-
 
     pl = Platform(screen, 0, 250, 500)
     platforms.append(pl)
