@@ -1,10 +1,13 @@
 import pygame
 import random
 from pygame.draw import *
+import math
 width=1000 #ширина окна
 heigth=700 # высота окна
 pygame.init()
 g = 1
+
+
 
 class Portals(pygame.sprite.Sprite):
     def __init__(self, screen, x, y,orientation,link):
@@ -55,8 +58,59 @@ class Portals(pygame.sprite.Sprite):
         if self.timer_image_portal_temp>12:
             self.timer_image_portal=0
             self.timer_image_portal_temp=0
+class Guns:
+    def __init__(self,screen,owner,gun_type):#тут под owner имееться в виду тот кто держит пушку нужен для координат если
+                                              #если будет несколько игроков надо указать игрока если конечно player.x даст координату игрока
+        pygame.sprite.Sprite.__init__(self)
+        self.screen = screen
+        self.owner=owner
+        self.gun_type=gun_type
+        self.images=[pygame.transform.scale(pygame.image.load('gun1.png'), (80, 45))]
+    def draw(self):
+        angle = math.atan2(-self.owner.y+pygame.mouse.get_pos()[1], self.owner.x-pygame.mouse.get_pos()[0])#тут наверное надо будет чтото поменять позиции мышки
+                                                                                                             #всм не знаю как по мультиплееру передоваться будет
+        image = pygame.transform.rotate(self.images[self.gun_type], angle)
+        image = self.images[self.gun_type]
+        image.set_colorkey((255, 255, 255))
+        image = pygame.transform.rotate(image, ((angle / 3.14) * 180)+180)
+        screen.blit(image, (self.owner.x+30, self.owner.y+20))
+    def vistrel(self):
+        angle = math.atan2(-self.owner.y + pygame.mouse.get_pos()[1], self.owner.x - pygame.mouse.get_pos()[0])
+        bullets.append(Bullets(self.screen,self.owner.x+60,self.owner.y+30,-20*math.cos(angle),20*math.sin(angle),self.owner,self.gun_type,0))
 
 
+
+class Bullets:
+    def __init__(self, screen, x, y, vx,vy,owner,bullet_type,bullet_time_life):
+        #x,y,vx,vy-стандарнто,owner-тот кто выстрелил чтобы в коцне пуля не убила стрелявшего
+        # bullet_type-тип пули(вдруг будут еще) bullet_time_life-просто таймер(мб время жизни пули должно пригодиться)
+        pygame.sprite.Sprite.__init__(self)
+        self.screen = screen
+        self.images=[pygame.transform.scale(pygame.image.load('bullet1.png'), (20, 20))]
+        self.x=x
+        self.y=y
+        self.vx=vx
+        self.vy=vy
+        self.owner=owner
+        self.bullet_type=bullet_type
+        self.bullet_time_life=bullet_time_life
+        self.rect = self.images[self.bullet_type].get_rect()
+        print(vx,vy)
+        print("создал")
+    def move(self):
+        self.x+=self.vx
+        self.y+=self.vy
+        self.bullet_time_life-=1
+        print('движемся')
+    def draw(self): #тут ничего интересного просто отрисовка пули (поворот изображения и тп)
+        print("рисую пулю")
+        angle=math.atan2(-self.vy, self.vx)
+        image=pygame.transform.rotate(self.images[self.bullet_type],angle)
+        image=self.images[self.bullet_type]
+        image.set_colorkey((0,0,0))
+        image=pygame.transform.rotate(image,(angle/3.14)*180)
+        screen.blit(image, (self.x, self.y))
+        self.rect.center = (self.x, self.y)
 
 class Coin(pygame.sprite.Sprite):
 
@@ -152,9 +206,7 @@ def move(hero, platforms,k):
         if hero.x + 79 > 1000:
             hero.x = 1000 - 79
             hero.dx = 0
-    else:
-        if k:
-            hero.x += hero.dx
+    hero.x += hero.dx
     return k
 def transpos(object): # телепортация через портал объекта
     for start_portal in portals:
@@ -166,17 +218,30 @@ def transpos(object): # телепортация через портал объ�
                         object.x=end_portal.x-object.rect[2]-10 #вычитаем 10 чтобы  было время на реагирование после телерортации
                     else:
                         object.x=end_portal.x+object.rect[2]+10 #-||-
-                    #if (start_portal.orientation!=end_portal.orientation)and(есть скорость):
-                    #    object.vx=(-1)*object.vx
+                    if (start_portal.orientation!=end_portal.orientation)and(type(object)==Bullets):
+                        object.vx=int((-1)*object.vx)
+def Generator_pl():
+    level=(300,500,700, 1000,100)#уровни на которых нужно сделать платформы
+    jump_distance=150#длинна прыжка
+    min_length=200#минимальная длинна платформы
+    max_length=400#максимальная длинна платформы
+    for i in level:
+        x_nachala=0
+        while x_nachala<width+5:#проверка на не выход за экран
+            length=random.randint(min_length,max_length)
+            platforms.append(Platform(screen, x_nachala, i, length))
+            x_nachala+=(length+jump_distance)
+            #print("mozno")#для отладки
 
 
-FPS = 20
+FPS = 30
 screen = pygame.display.set_mode((width, heigth))
 
 pygame.display.update()
 clock = pygame.time.Clock()
 finished = False
 platforms = []
+bullets=[]
 timer = 0
 k = False
 portals=[]  #список порталов все порталы добавлять сюда
@@ -184,9 +249,11 @@ portals=[]  #список порталов все порталы добавля�
 hero = Hero(screen, 0, 35)
 hero.images.append(pygame.transform.scale(pygame.image.load('hero1.png'), (79, 100)))
 hero.images.append(pygame.transform.scale(pygame.image.load('hero2.png'), (79, 100)))
-portals.append(Portals(screen,300,450,False,2))#тестовые порталы
-portals.append(Portals(screen,500,450,False,2))#тестовые порталы
-
+portals.append(Portals(screen,300,450,True,2))#тестовые порталы
+portals.append(Portals(screen,50,450,False,2))#тестовые порталы
+Generator_pl()
+bullets.append(Bullets(screen,100,100,8,0.5,0,0,0))
+test_gun=Guns(screen,hero,0)
 while not finished:
     clock.tick(FPS)
 
@@ -196,24 +263,31 @@ while not finished:
     image.set_alpha(200)
     screen.blit(image, (0, 100))
 
-    pl = Platform(screen, 0, 250, 500)
-    platforms.append(pl)
     k = move(hero, platforms,k)
-    pl.draw()
     hero.draw()
+
 
     for i in portals:  #отрисовка порталов
         i.draw()       #отрисовка порталов
+    for i in platforms:  #плтаформ
+        i.draw()
+    for i in bullets:#движение и отрисовка пуль
+        i.draw()
+        i.move()
+        #if i.timer<0:
+
+
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             finished = True
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_LEFT:
-                hero.dx = -4
+                hero.dx = -8
                 hero.m = (-1)
             if event.key == pygame.K_RIGHT:
-                hero.dx = 4
+
+                hero.dx = 8
                 hero.m = 1
             if event.key == pygame.K_UP and k:
                 hero.dy = -10
@@ -222,12 +296,17 @@ while not finished:
                 hero.dx = 0
             if event.key == pygame.K_RIGHT:
                 hero.dx = 0
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            test_gun.vistrel()
 
+    test_gun.draw()
 
     f = pygame.font.Font(None, 36)
     text = f.render('Your game time (sec):' + str(timer/20), 1, (180, 0, 0))
     screen.blit(text, (400, 30))
     transpos(hero)#проверка на возможность телепортации героя и телепортация в случае если он зашел в портал
+    for i in bullets:
+        transpos(i)#проверка на возможность телепортации всех пуль
     timer += 1
 
     pygame.display.update()
